@@ -1,203 +1,135 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
+import 'package:task_manager/data/servicecounter/network_caller.dart';
+import 'package:task_manager/data/utils/urls.dart';
+import 'package:task_manager/ui/widgets/centered_circular_progress_indicator.dart';
 
-class AddNewProductScreen extends StatefulWidget {
-  static const name = '/add-new-product';
+import '../widgets/background_screen.dart';
+import '../widgets/snack_bar_message.dart';
+import '../widgets/tm_appBar.dart';
 
-  const AddNewProductScreen({super.key});
+class AddNewTaskScreen extends StatefulWidget {
+  const AddNewTaskScreen({super.key});
+
+  static const String name = '/add-new-task';
 
   @override
-  State<AddNewProductScreen> createState() => _AddNewProductScreenState();
+  State<AddNewTaskScreen> createState() => _AddNewTaskScreenState();
 }
 
-class _AddNewProductScreenState extends State<AddNewProductScreen> {
-  final TextEditingController _nameTEController = TextEditingController();
-  final TextEditingController _priceTEController = TextEditingController();
-  final TextEditingController _totalPriceTEController = TextEditingController();
-  final TextEditingController _quantityTEController = TextEditingController();
-  final TextEditingController _imageTEController = TextEditingController();
-  final TextEditingController _codeTEController = TextEditingController();
-  GlobalKey<FormState> _formkey = GlobalKey<FormState>();
-  bool _addNewProductInProgress = false;
+class _AddNewTaskScreenState extends State<AddNewTaskScreen> {
+  final TextEditingController _titleTEController = TextEditingController();
+  final TextEditingController _descriptionTEController =
+  TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _addNewTaskInProgress = false;
+
+  bool mainScreenRefrash = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add new product'),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _buildProductForm(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductForm() {
-    return Form(
-      key: _formkey,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: _nameTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.text,
-            decoration:
-            InputDecoration(hintText: 'Name', labelText: 'Product Name'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product name';
-              }
-              return null;
-            },
-          ),
-          TextFormField(
-            controller: _priceTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.number,
-            decoration:
-            InputDecoration(hintText: 'Price', labelText: 'Product Price'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product Price';
-              }
-              return null;
-            },
-          ),
-          TextFormField(
-            controller: _totalPriceTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-                hintText: 'Total Price', labelText: 'Product Total Price'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product Total Price';
-              }
-              return null;
-            },
-          ),
-          TextFormField(
-            controller: _quantityTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-                hintText: 'Quantity', labelText: 'Product Quantity'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product Quantity';
-              }
-              return null;
-            },
-          ),
-          TextFormField(
-            controller: _imageTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.text,
-            decoration:
-            InputDecoration(hintText: 'Image', labelText: 'Product Image'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product Image';
-              }
-              return null;
-            },
-          ),
-          TextFormField(
-            controller: _codeTEController,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            keyboardType: TextInputType.number,
-            decoration:
-            InputDecoration(hintText: 'Code', labelText: 'Product Code'),
-            validator: (String? value) {
-              if (value?.trim().isEmpty ?? true) {
-                return 'Enter product Code';
-              }
-              return null;
-            },
-          ),
-          SizedBox(
-            height: 30,
-          ),
-          Visibility(
-            visible: _addNewProductInProgress == false,
-            replacement: Center(
-              child: CircularProgressIndicator(),
+    final textTheme = Theme.of(context).textTheme;
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, mainScreenRefrash);
+        return true;
+      },
+      child: Scaffold(
+        appBar: TMAppBar(),
+        body: BackgroundScreen(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 32),
+                    Text('Add New Task', style: textTheme.titleLarge),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _titleTEController,
+                      decoration: const InputDecoration(
+                        hintText: 'Title',
+                      ),
+                      validator: (String? value) {
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Enter your title here';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionTEController,
+                      maxLines: 6,
+                      decoration: const InputDecoration(
+                        hintText: 'Description',
+                      ),
+                      validator: (String? value) {
+                        if (value?.trim().isEmpty ?? true) {
+                          return 'Enter your description here';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Visibility(
+                      visible: _addNewTaskInProgress == false,
+                      replacement: const CenteredCircularProgressIndicator(),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            _createNewTask();
+                          }
+                        },
+                        child: const Icon(
+                          Icons.arrow_circle_right_outlined,
+                          size: 24,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            child: ElevatedButton(
-                onPressed: () {
-                  if (_formkey.currentState!.validate()) {
-                    _addNewProduct();
-                  }
-                },
-                child: Text('Add New Product')),
-          )
-        ],
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _addNewProduct() async {
-    _addNewProductInProgress = true;
+  Future<void> _createNewTask() async {
+    _addNewTaskInProgress = true;
     setState(() {});
-
-    Uri uri = Uri.parse('https://crud.teamrabbil.com/api/v1/CreateProduct');
-    // headers: {
-    //   'Content-type' :'application/json'
-    // }
-
     Map<String, dynamic> requestBody = {
-      "ProductName": _nameTEController.text.trim(),
-      "ProductCode": _codeTEController.text.trim(),
-      "Img": _imageTEController.text.trim(),
-      "UnitPrice": _priceTEController.text.trim(),
-      "Qty": _quantityTEController.text.trim(),
-      "TotalPrice": _totalPriceTEController.text.trim(),
+      "title": _titleTEController.text.trim(),
+      "description": _descriptionTEController.text.trim(),
+      "status": "New"
     };
-    Response response = await post(uri,
-        headers: {'Content-type': 'application/json'},
-        body: jsonEncode(requestBody));
-    print(response.statusCode);
-    print(response.body);
-    _addNewProductInProgress = false;
+    final NetworkResponse response = await NetworkCaller.postRequest(
+        url: Urls.createTaskUrl, body: requestBody);
+    _addNewTaskInProgress = false;
     setState(() {});
-    if (response.statusCode == 200) {
+    if (response.isSuccess) {
       _clearTextFields();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('New Product added!'),
-        ),
-      );
+      showSnackBarMessage(context, 'New task added!', true);
+      mainScreenRefrash = true;
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('New Product added failed! Try again'),
-        ),
-      );
+      showSnackBarMessage(context, response.errorMessage, false);
     }
   }
 
   void _clearTextFields() {
-    _nameTEController.clear();
-    _codeTEController.clear();
-    _priceTEController.clear();
-    _totalPriceTEController.clear();
-    _imageTEController.clear();
-    _quantityTEController.clear();
+    _titleTEController.clear();
+    _descriptionTEController.clear();
   }
 
   @override
   void dispose() {
-    _nameTEController.dispose();
-    _codeTEController.dispose();
-    _priceTEController.dispose();
-    _totalPriceTEController.dispose();
-    _imageTEController.dispose();
-    _quantityTEController.dispose();
+    _titleTEController.dispose();
+    _descriptionTEController.dispose();
     super.dispose();
   }
 }
