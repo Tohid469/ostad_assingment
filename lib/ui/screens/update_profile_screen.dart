@@ -2,11 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:task_manager/ui/controllerpad/update_profile_controller.dart';
 import 'package:task_manager/ui/widgets/background_screen.dart';
 import 'package:task_manager/ui/widgets/centered_circular_progress_indicator.dart';
-import 'package:task_manager/ui/widgets/snack_bar_message.dart';
 import 'package:task_manager/ui/widgets/tm_appBar.dart';
 
 class UpdateProfileScreen extends StatelessWidget {

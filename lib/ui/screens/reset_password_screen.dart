@@ -9,9 +9,6 @@ import 'package:task_manager/ui/utils/app_colors.dart';
 import 'package:task_manager/ui/widgets/background_screen.dart';
 
 
-import '../../data/utils/urls.dart';
-
-import '../widgets/snack_bar_message.dart';
 
 class ResetPasswordScreen extends StatelessWidget {
 

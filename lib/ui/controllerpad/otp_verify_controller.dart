@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:task_manager/data/servicecounter/network_caller.dart';
 import 'package:task_manager/ui/screens/reset_password_screen.dart';
-
 import '../../data/utils/urls.dart';
 import '../widgets/snack_bar_message.dart';
 

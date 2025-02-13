@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:task_manager/data/moduls/task_count_by_status_model.dart';
 import 'package:task_manager/data/moduls/task_list_by_status_model.dart';
 import 'package:task_manager/data/servicecounter/network_caller.dart';
+
 import 'package:task_manager/data/utils/urls.dart';
 
 class ProgressTaskController extends GetxController {
