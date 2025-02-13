@@ -1,162 +1,186 @@
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:task_manager/data/moduls/user_model.dart';
-
-import 'package:task_manager/data/utils/urls.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';  // Make sure this import is added for AlertDialog and TextButton
+import 'package:http/http.dart';
+import 'package:task_manager/app.dart';
 import 'package:task_manager/ui/controllerpad/auth_controller.dart';
-import 'package:task_manager/ui/controllerpad/sign_in_controller.dart';
-import 'package:task_manager/ui/screens/forgot_password_email_verification.dart';
+import 'package:task_manager/ui/screens/sign_in_screen.dart';
 
-import 'package:task_manager/ui/screens/main_bottom_nav_screen.dart';
-import 'package:task_manager/ui/screens/sign_up_screen.dart';
-import 'package:task_manager/ui/utils/app_colors.dart';
-import 'package:task_manager/ui/widgets/background_screen.dart';
-import 'package:task_manager/ui/widgets/centered_circular_progress_indicator.dart';
-import 'package:task_manager/ui/widgets/snack_bar_message.dart';
+class NetworkResponse {
+  final int statusCode;
+  final Map<String, dynamic>? responseData;
+  final bool isSuccess;
+  final String errorMessage;
 
-
-
-class SignInScreen extends StatefulWidget {
-  SignInScreen({super.key});
-
-  final TextEditingController _emailTEController = TextEditingController();
-
-  final TextEditingController _passwordTEController = TextEditingController();
-
-  static const String name = '/sign-in';
-
-  @override
-  State<SignInScreen> createState() => _SignInScreenState();
+  NetworkResponse({
+    required this.isSuccess,
+    required this.statusCode,
+    this.responseData,
+    this.errorMessage = 'Something went wrong!',
+  });
 }
 
-class _SignInScreenState extends State<SignInScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+class NetworkCaller {
+  // Handle GET requests
+  static Future<NetworkResponse> getRequest({required String url}) async {
+    int retryCount = 3;
+    while (retryCount > 0) {
+      try {
+        Uri uri = Uri.parse(url);
+        debugPrint('URL => $url');
+        Response response = await get(uri, headers: {'token': AuthController.accessToken ?? ''});
+        debugPrint('Response Code => ${response.statusCode}');
+        debugPrint('Response Data => ${response.body}');
 
-  @override
-  Widget build(BuildContext context) {
-
-    final textTheme = Theme.of(context).textTheme;
-
-    return GetBuilder<SignInController>(
-      init: SignInController(),
-      builder: (controller) {
-        return Scaffold(
-          body: BackgroundScreen(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 80),
-                      Text('Get Started With', style: textTheme.titleLarge),
-                      const SizedBox(height: 24),
-                      TextFormField(
-                        controller: widget._emailTEController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(hintText: 'Email'),
-                        validator: (String? value) {
-                          if (value?.trim().isEmpty ?? true) {
-                            return 'Enter a valid email address';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: widget._passwordTEController,
-                        obscureText: true,
-                        decoration: const InputDecoration(hintText: 'Password'),
-                        validator: (String? value) {
-                          if (value?.trim().isEmpty ?? true) {
-                            return 'Enter your valid password';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      Visibility(
-                        visible: controller.signInProgress == false,
-                        replacement: const CenteredCircularProgressIndicator(),
-                        child: ElevatedButton(
-                          onPressed: () => {_onTapSignInButton(context,controller)},
-                          child: const Icon(Icons.arrow_circle_right_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      Center(
-                        child: Column(
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.pushNamed(context,
-                                    ForgotPasswordVerifyEmailScreen.name);
-                              },
-                              child: const Text('Forgot Password?'),
-                            ),
-                            _buildSignUpSection(context),
-                          ],
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+        if (response.statusCode == 200) {
+          final decodedResponse = jsonDecode(response.body);
+          return NetworkResponse(
+            isSuccess: true,
+            statusCode: response.statusCode,
+            responseData: decodedResponse,
+          );
+        } else {
+          return _handleError(response);
+        }
+      } catch (e) {
+        retryCount--;
+        if (retryCount == 0) {
+          return NetworkResponse(
+            isSuccess: false,
+            statusCode: -1,
+            errorMessage: 'Failed after multiple attempts: ${e.toString()}',
+          );
+        }
+      }
+    }
+    return NetworkResponse(isSuccess: false, statusCode: -1, errorMessage: 'Unknown error');
   }
 
-  void _onTapSignInButton(BuildContext context,SignInController controller) {
-    if (_formKey.currentState!.validate()) {
-      Map<String, dynamic> requestBody = {
-        "email": widget._emailTEController.text.trim(),
-        "password": widget._passwordTEController.text,
-      };
-      controller.signIn(requestBody).then((response) async {
-        if (response.isSuccess) {
-          String token = response.responseData!['token'];
-          UserModel userModel =
-          UserModel.fromJson(response.responseData!['data']);
-          await AuthController.saveUserData(token, userModel);
-          Get.offNamed(MainBottomNavScreen.name);
-        } else {
-          if (response.statusCode == 401) {
-            showSnackBarMessage(
-                context, 'Email/Password is invalid! Try again.',false);
-          } else {
-            showSnackBarMessage(context, response.errorMessage,true);
-          }
-        }
-      });
+  // Handle POST requests
+  static Future<NetworkResponse> postRequest({required String url, Map<String, dynamic>? body}) async {
+    try {
+      Uri uri = Uri.parse(url);
+      debugPrint('URL => $url');
+      debugPrint('BODY => $body');
+      Response response = await post(uri,
+        headers: {
+          'content-type': 'application/json',
+          'token': AuthController.accessToken ?? ''
+        },
+        body: jsonEncode(body),
+      );
+      debugPrint('Response Code => ${response.statusCode}');
+      debugPrint('Response Data => ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decodedResponse = jsonDecode(response.body);
+        return NetworkResponse(
+          isSuccess: true,
+          statusCode: response.statusCode,
+          responseData: decodedResponse,
+        );
+      } else {
+        return _handleError(response);
+      }
+    } catch (e) {
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: -1,
+        errorMessage: e.toString(),
+      );
     }
   }
 
-  Widget _buildSignUpSection(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        text: "Don't have an account? ",
-        style:
-        const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600),
-        children: [
-          TextSpan(
-            text: 'Sign up',
-            style: const TextStyle(
-              color: AppColors.themColor,
-            ),
-            recognizer: TapGestureRecognizer()
-              ..onTap = () {
-                Get.toNamed(SignUpScreen.name);
-              },
-          )
+  static Future<NetworkResponse> registerRequest({required String url, Map<String, dynamic>? body}) async {
+    try {
+      Uri uri = Uri.parse(url);
+      debugPrint('URL => $url');
+      debugPrint('BODY => $body');
+      Response response = await post(uri,
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+      debugPrint('Response Code => ${response.statusCode}');
+      debugPrint('Response Data => ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decodedResponse = jsonDecode(response.body);
+        return NetworkResponse(
+          isSuccess: true,
+          statusCode: response.statusCode,
+          responseData: decodedResponse,
+        );
+      } else {
+        return _handleError(response);
+      }
+    } catch (e) {
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: -1,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+
+  // Handle errors based on the status code
+  static NetworkResponse _handleError(Response response) {
+    if (response.statusCode == 401) {
+      _logout();
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: response.statusCode,
+        errorMessage: 'Unauthorized. Please log in again.',
+      );
+    } else if (response.statusCode == 404) {
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: response.statusCode,
+        errorMessage: 'Resource not found.',
+      );
+    } else if (response.statusCode == 500) {
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: response.statusCode,
+        errorMessage: 'Server error. Please try again later.',
+      );
+    } else {
+      return NetworkResponse(
+        isSuccess: false,
+        statusCode: response.statusCode,
+        errorMessage: 'Unexpected error occurred.',
+      );
+    }
+  }
+
+  // Log the user out in case of unauthorized access
+  static Future<void> _logout() async {
+    bool shouldLogout = await showDialog(
+      context: TaskManagerApp.navigatorKey.currentContext!,
+      builder: (context) => AlertDialog(
+        title: Text('Session Expired'),
+        content: Text('Your session has expired. Please log in again.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Log Out'),
+          ),
         ],
       ),
-    );
+    ) ?? false;
+
+    if (shouldLogout) {
+      await AuthController.clearUserData();
+      Navigator.pushNamedAndRemoveUntil(
+        TaskManagerApp.navigatorKey.currentContext!,
+        SignInScreen.name,
+            (_) => false,
+      );
+    }
   }
 }
