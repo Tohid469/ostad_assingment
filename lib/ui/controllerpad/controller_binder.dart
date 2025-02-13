@@ -1,16 +1,18 @@
 import 'package:get/get.dart';
-import 'package:task_manager/ui/controllers/add_new_task_controller.dart';
-import 'package:task_manager/ui/controllers/bottom_nav_controller.dart';
-import 'package:task_manager/ui/controllers/cancelled_task_controller.dart';
-import 'package:task_manager/ui/controllers/complete_task_controller.dart';
-import 'package:task_manager/ui/controllers/email_verify_controller.dart';
-import 'package:task_manager/ui/controllers/otp_verify_controller.dart';
-import 'package:task_manager/ui/controllers/new_task_controller.dart';
-import 'package:task_manager/ui/controllers/progress_task_controller.dart';
-import 'package:task_manager/ui/controllers/reset_password_controller.dart';
-import 'package:task_manager/ui/controllers/sign_in_controller.dart';
-import 'package:task_manager/ui/controllers/sign_up_controller.dart';
-import 'package:task_manager/ui/controllers/update_profile_controller.dart';
+import 'package:task_manager/ui/controllerpad/progress_task_controller.dart';
+import 'package:task_manager/ui/controllerpad/reset_password_controller.dart';
+import 'package:task_manager/ui/controllerpad/sign_in_controller.dart';
+import 'package:task_manager/ui/controllerpad/sign_up_controller.dart';
+import 'package:task_manager/ui/controllerpad/update_profile_controller.dart';
+
+import 'add_new_task_controller.dart';
+import 'bottom_nav_controller.dart';
+import 'cancelled_task_controller.dart';
+import 'complete_task_controller.dart';
+import 'email_verify_controller.dart';
+import 'new_task_controller.dart';
+import 'otp_verify_controller.dart';
+//
 
 class ControllerBinder extends Bindings {
   @override
