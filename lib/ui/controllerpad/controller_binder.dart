@@ -12,7 +12,6 @@ import 'complete_task_controller.dart';
 import 'email_verify_controller.dart';
 import 'new_task_controller.dart';
 import 'otp_verify_controller.dart';
-//
 
 class ControllerBinder extends Bindings {
   @override
